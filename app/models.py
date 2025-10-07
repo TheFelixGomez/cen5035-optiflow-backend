@@ -23,5 +23,5 @@ class Order(BaseModel):
     items: List[OrderItem]
     status: str
 
-    # total is optional because we'll calculate it in main.py
+    # total is optional because we'll calculate it in main.py TODO: move this into anoter model
     total_amount: float | None = None
