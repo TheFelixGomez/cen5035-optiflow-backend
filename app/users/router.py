@@ -27,7 +27,13 @@ async def create_user(user: UserCreate):
     user_dict["hashed_password"] = hashed_password
     del user_dict["password"]
 
-    return await store_user(UserDB(**user_dict))
+    created_user = await store_user(UserDB(**user_dict))
+    if created_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create user",
+        )
+    return created_user
 
 
 @router.get("/me", response_model=User)
