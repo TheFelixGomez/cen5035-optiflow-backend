@@ -11,7 +11,7 @@ async def get_user(username: str):
 
 async def store_user(user: UserDB) -> User | None:
     user_created = await users_collection.insert_one(user.model_dump())
-    if user_created:
+    if user_created.acknowledged:
         return User(
             **user.model_dump(),
             _id=str(user_created.inserted_id),
