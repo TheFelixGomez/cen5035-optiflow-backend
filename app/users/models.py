@@ -18,4 +18,3 @@ class UserDB(User):
 class UserCreate(BaseModel):
     username: str
     password: str
-    
