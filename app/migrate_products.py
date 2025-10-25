@@ -1,5 +1,3 @@
-import sys
-import os
 import asyncio
 from httpx import AsyncClient
 from pymongo import UpdateOne
@@ -7,11 +5,7 @@ from decouple import config
 
 from app.database import products_collection
 
-
-
-## sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-FAKESTORE_URL = "https://fakestoreapi.com/products"
+FAKESTORE_URL = config("FAKESTORE_URL")
 
 async def fetch_products():
     async with AsyncClient(timeout=30) as client:
@@ -33,7 +27,6 @@ def transform_product(item: dict) -> dict:
 
 async def create_indexes():
     await products_collection.create_index("id", unique=True)
-    # índice por categoría (opcional)
     await products_collection.create_index("category")
 
 async def migrate():
