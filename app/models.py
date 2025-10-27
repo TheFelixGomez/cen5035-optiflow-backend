@@ -30,13 +30,12 @@ class Order(BaseModel):
 
 
 # Products model
-
 class Product(BaseModel):
-    id: int                        # id del fakestoreapi
+    id: int                       
     title: str
     price: float
     description: Optional[str] = None
     category: Optional[str] = None
     image: Optional[HttpUrl] = None
-    rating: Optional[dict] = None           # la API devuelve rating {rate, count}
+    rating: Optional[dict] = None           
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
