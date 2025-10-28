@@ -1,17 +1,11 @@
 from fastapi import FastAPI
+#from app.database import users_collection
+from app.routers import products 
 
-from app.database import users_collection
+app = FastAPI(title="OptiFlow API")
 
-app = FastAPI()
-
+app.include_router(products.router, prefix="/products", tags=["Products"])
 
 @app.get("/ping")
 def ping():
-    return "pong"
-
-
-@app.get("/db-ping")
-async def db_ping():
-    await users_collection.find_one({})
-
-    return "db pong"
+    return {"message": "pong"}
