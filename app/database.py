@@ -8,4 +8,6 @@ mongo_db = client.optiflow
 
 # Access to each all collections on optiflow MongoDB
 users_collection = mongo_db.users
+orders_collection = mongo_db.orders
+vendors_collection = mongo_db.vendors
 products_collection = mongo_db.products
