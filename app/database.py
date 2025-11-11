@@ -10,3 +10,4 @@ mongo_db = client.optiflow
 users_collection = mongo_db.users
 orders_collection = mongo_db.orders
 vendors_collection = mongo_db.vendors
+products_collection = mongo_db.products
