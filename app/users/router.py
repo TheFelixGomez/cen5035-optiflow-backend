@@ -1,20 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.database import get_db
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
 from app.auth.service import get_current_active_user, get_password_hash
 from app.users.models import User, UserCreate, UserDB
 from app.users.service import get_user, store_user
-from app.database import get_db
-from motor.motor_asyncio import AsyncIOMotorDatabase
-
+from app.database import users_collection  # Directly import the collection
 
 router = APIRouter(
     prefix="/users",
     tags=["users"],
 )
-
 
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
 async def create_user(user: UserCreate):
@@ -49,13 +43,14 @@ async def read_users_me(
 ):
     return current_user
 
+
 @router.get("/exists")
-async def check_user_exists(email: str, db: AsyncIOMotorDatabase = Depends(get_db)):
+async def check_user_exists(email: str):
     """
     Checks if a user exists by email (username).
     Returns { "exists": True } if found, or 404 if not.
     """
-    user = await db["users"].find_one({"username": email})
+    user = await users_collection.find_one({"username": email})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return {"exists": True}
