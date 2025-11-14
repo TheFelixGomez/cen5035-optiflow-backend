@@ -11,8 +11,8 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserCreate):
-    existing_user = await get_user(username=user.username)
+def create_user(user: UserCreate):
+    existing_user = get_user(username=user.username)  # Remove await
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -28,7 +28,7 @@ async def create_user(user: UserCreate):
     user_dict["hashed_password"] = hashed_password
     del user_dict["password"]
 
-    created_user = await store_user(UserDB(**user_dict))
+    created_user = store_user(UserDB(**user_dict))  # Remove await
     if created_user is None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -38,19 +38,19 @@ async def create_user(user: UserCreate):
 
 
 @router.get("/me", response_model=User)
-async def read_users_me(
+def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     return current_user
 
 
 @router.get("/exists")
-async def check_user_exists(email: str):
+def check_user_exists(email: str):
     """
     Checks if a user exists by email (username).
     Returns { "exists": True } if found, or 404 if not.
     """
-    user = await users_collection.find_one({"username": email})
+    user = users_collection.find_one({"username": email})  # Remove await
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return {"exists": True}
