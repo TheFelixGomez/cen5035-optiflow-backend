@@ -9,6 +9,7 @@ class User(BaseModel):
     id: PyObjectId | None = Field(alias="_id", default=None)
     username: str
     disabled: bool = False
+    role: str = "customer"
 
 
 class UserDB(User):
@@ -18,3 +19,4 @@ class UserDB(User):
 class UserCreate(BaseModel):
     username: str
     password: str
+    role: str = "customer" 
