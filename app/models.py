@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, EmailStr
-from typing import List
+from typing import List, Optional
 from datetime import datetime, UTC
 
 # Vendor model
@@ -8,7 +8,7 @@ class Vendor(BaseModel):
     email: EmailStr
     phone: str
     address: str
-    created_at: datetime = Field(default_factory=datetime.now(UTC))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 # Order Item model
 class OrderItem(BaseModel):
@@ -16,12 +16,22 @@ class OrderItem(BaseModel):
     quantity: int
     price: float
 
-# Order model
-class Order(BaseModel):
+# Order Model for creating/updating order
+class OrderCreate(BaseModel):
     vendor_id: str
-    order_date: datetime = Field(default_factory=datetime.utcnow)
+    order_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     items: List[OrderItem]
     status: str
+    special_instructions: Optional[str] = None
+    due_at: Optional[datetime] = None
 
-    # total is optional because we'll calculate it in main.py TODO: move this into anoter model
-    total_amount: float | None = None
+# Order Model for storing/returning
+class OrderResponse(BaseModel):
+    id: str
+    vendor_id: str
+    order_date: str
+    items: List[OrderItem]
+    status: str
+    total_amount: float
+    special_instructions: Optional[str] = None
+    due_at: Optional[str] = None
