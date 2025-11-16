@@ -1,6 +1,5 @@
 from datetime import timedelta, timezone, datetime
 from typing import Annotated
-
 import jwt
 from decouple import config
 from fastapi import Depends, HTTPException, status
@@ -38,6 +37,8 @@ async def authenticate_user(username: str, password: str):
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
+    if "role" not in to_encode:
+        to_encode["role"] = "customer"
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -58,12 +59,14 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         username = payload.get("sub")
         if username is None:
             raise credentials_exception
+        role = payload.get("role", "customer")
         token_data = TokenData(username=username)
     except InvalidTokenError:
         raise credentials_exception
     user = await get_user(username=token_data.username)
     if user is None:
         raise credentials_exception
+    user.role = role
     return user
 
 
