@@ -46,12 +46,12 @@ async def read_users_me(
 
 @router.get("/exists")
 async def check_user_exists(email: str):
+    """
+    Checks if a user exists by email (username).
     Returns { "exists": True } if found, or 404 if not.
     """
     user= await users_collection.find_one({"username": email}) 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-return {"exists": True}
     
-    + return {"exists": True}
-    
+    return {"exists": True}
