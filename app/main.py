@@ -1,10 +1,20 @@
 from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
+
 from app.routers import vendors_router, orders_router
 from app.database import users_collection
 from app.auth.router import router as auth_router
 from app.users.router import router as users_router
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # All origins allowed for simplicity (we ignore security on purpose)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(vendors_router.router)
 app.include_router(orders_router.router)
