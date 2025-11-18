@@ -55,3 +55,8 @@ async def check_user_exists(email: str):
         raise HTTPException(status_code=404, detail="User not found")
     
     return {"exists": True}
+
+@router.get("/count")
+async def get_users_count():
+    count = await users_collection.count_documents({})
+    return {"count": count}

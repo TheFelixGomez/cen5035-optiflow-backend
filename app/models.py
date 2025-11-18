@@ -19,6 +19,7 @@ class OrderItem(BaseModel):
 
 # Order model
 class Order(BaseModel):
+    user_id: str
     vendor_id: str
     order_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
