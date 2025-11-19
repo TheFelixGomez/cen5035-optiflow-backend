@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException
 from bson import ObjectId
 from bson.errors import InvalidId
-from app.database import orders_collection, users_collection
-from app.models import Order, OrderCreate, OrderResponse
+from fastapi import APIRouter, HTTPException
 
+from app.database import orders_collection, users_collection
+from app.models import OrderCreate, OrderResponse
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
