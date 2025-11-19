@@ -1,14 +1,18 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from app.routers import vendors_router, orders_router, calendar_router, reporting_router, auth_router, users_router
+from app.routers import vendors_router, orders_router, calendar_router, reporting_router
 from app.database import users_collection
+from app.auth import router as auth_router
+from app.users import router as users_router
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # All origins allowed for simplicity (we ignore security on purpose)
+    allow_origins=[
+        "*"
+    ],  # All origins allowed for simplicity (we ignore security on purpose)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,7 +28,7 @@ app.include_router(reporting_router.router)
 
 @app.get("/ping")
 def ping():
-    return {"message":"pong"}
+    return {"message": "pong"}
 
 
 @app.get("/db-ping")
