@@ -74,9 +74,8 @@ async def get_order(
         raise HTTPException(status_code=404, detail="Order not found")
 
     # Customer cannot access another user's order
-    if current_user.role != "admin" and order.get("user_id") != str( current_user.id):
+    if current_user.role != "admin" and order.get("user_id") != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
-
 
     return serialize_order(order)
 
@@ -99,7 +98,6 @@ async def update_order(
     # Customer cannot modify another user's order
     if current_user.role != "admin" and existing.get("user_id") != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
-
 
     updated_dict = updated.model_dump()
     updated_dict["total_amount"] = sum(
