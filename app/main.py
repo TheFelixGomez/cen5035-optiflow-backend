@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from app.routers import vendors_router, reporting_router
+from app.routers import reporting_router
 from app.database import users_collection
 from app.auth import router as auth_router
 from app.users import router as users_router
 from app.orders import router as orders_router
 from app.calendar import router as calendar_router
+from app.vendors import router as vendors_router
 
 app = FastAPI()
 
