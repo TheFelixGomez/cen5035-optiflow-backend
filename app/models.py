@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, EmailStr, HttpUrl
 from typing import List, Optional
 from datetime import datetime, UTC
 
+
 # Vendor model
 class Vendor(BaseModel):
     name: str
@@ -10,11 +11,13 @@ class Vendor(BaseModel):
     address: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
+
 # Order Item model
 class OrderItem(BaseModel):
     product_name: str
     quantity: int
     price: float
+
 
 # Order model
 class Order(BaseModel):
@@ -24,8 +27,9 @@ class Order(BaseModel):
     items: List[OrderItem]
     status: str
 
-    # total is optional because we'll calculate it in main.py TODO: move this into anoter model
+    # total is optional because we'll calculate it in main.py
     total_amount: float | None = None
+
 
 # Order Model for creating/updating order
 class OrderCreate(BaseModel):
@@ -35,6 +39,7 @@ class OrderCreate(BaseModel):
     status: str
     special_instructions: Optional[str] = None
     due_at: Optional[datetime] = None
+
 
 # Order Model for storing/returning
 class OrderResponse(BaseModel):
