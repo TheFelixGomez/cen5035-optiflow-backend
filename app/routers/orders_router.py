@@ -7,6 +7,7 @@ from app.models import Order, OrderCreate, OrderResponse
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
+
 def serialize_order(order) -> dict:
     return {
         "id": str(order["_id"]),
@@ -18,6 +19,7 @@ def serialize_order(order) -> dict:
         "special_instructions": order.get("special_instructions"),
         "due_at": str(order.get("due_at")) if order.get("due_at") else None,
     }
+
 
 @router.post("/", response_model=OrderResponse)
 async def create_order(order: OrderCreate):
@@ -42,10 +44,12 @@ async def create_order(order: OrderCreate):
 
     return serialize_order(new_order)
 
+
 @router.get("/", response_model=list[OrderResponse])
 async def get_orders():
     data = await orders_collection.find().to_list(length=None)
     return [serialize_order(order) for order in data]
+
 
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(order_id: str):
@@ -60,6 +64,7 @@ async def get_order(order_id: str):
 
     return serialize_order(order)
 
+
 @router.put("/{order_id}")
 async def update_order(order_id: str, updated: OrderCreate):
     try:
@@ -68,17 +73,17 @@ async def update_order(order_id: str, updated: OrderCreate):
         raise HTTPException(status_code=400, detail="Invalid order ID")
 
     updated_dict = updated.model_dump()
-    updated_dict["total_amount"] = sum(item.price * item.quantity for item in updated.items)
-
-    result = await orders_collection.update_one(
-        {"_id": oid},
-        {"$set": updated_dict}
+    updated_dict["total_amount"] = sum(
+        item.price * item.quantity for item in updated.items
     )
+
+    result = await orders_collection.update_one({"_id": oid}, {"$set": updated_dict})
 
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Order not found")
 
     return {"message": "Order updated successfully"}
+
 
 @router.delete("/{order_id}")
 async def delete_order(order_id: str):
