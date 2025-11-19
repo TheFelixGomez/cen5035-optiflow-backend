@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from bson import ObjectId
 from app.database import users_collection
-from app.models import Vendor
+from app.vendors.models import Vendor
 
 router = APIRouter(prefix="/vendors", tags=["Vendors"])
 

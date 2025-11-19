@@ -5,24 +5,12 @@ from bson.errors import InvalidId
 from fastapi import APIRouter, HTTPException, Depends
 
 from app.database import orders_collection, users_collection
-from app.models import OrderCreate, OrderResponse
 from app.auth.service import get_current_active_user
+from app.orders.models import OrderResponse, OrderCreate
+from app.orders.service import serialize_order
 from app.users.models import User
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
-
-
-def serialize_order(order) -> dict:
-    return {
-        "id": str(order["_id"]),
-        "vendor_id": str(order["vendor_id"]),
-        "order_date": str(order["order_date"]),
-        "items": order["items"],
-        "status": order["status"],
-        "total_amount": order.get("total_amount", 0),
-        "special_instructions": order.get("special_instructions"),
-        "due_at": str(order.get("due_at")) if order.get("due_at") else None,
-    }
 
 
 @router.post("/", response_model=OrderResponse)
