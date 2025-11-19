@@ -47,7 +47,7 @@ async def get_order_summary(start: str, end: str):
     try:
         start_date = datetime.fromisoformat(start)
         end_date = datetime.fromisoformat(end)
-    except:
+    except:  # noqa: E722
         raise HTTPException(
             status_code=400, detail="Invalid date format. Use YYYY-MM-DD"
         )
@@ -62,7 +62,7 @@ async def export_summary_pdf(start: str, end: str):
     try:
         start_date = datetime.fromisoformat(start)
         end_date = datetime.fromisoformat(end)
-    except:
+    except:  # noqa: E722
         raise HTTPException(status_code=400, detail="Invalid date format")
 
     data = await run_summary_pipeline(start_date, end_date)
@@ -102,7 +102,7 @@ async def export_summary_csv(start: str, end: str):
     try:
         start_date = datetime.fromisoformat(start)
         end_date = datetime.fromisoformat(end)
-    except:
+    except:  # noqa: E722
         raise HTTPException(status_code=400, detail="Invalid date format")
 
     data = await run_summary_pipeline(start_date, end_date)
