@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from typing import List
 
 from app.products.models import Product
@@ -23,7 +23,10 @@ async def read_products():
 
 @router.get("/{product_id}", response_model=Product)
 async def read_product(product_id: int):
-    return await get_product_by_id(product_id)
+    product = await get_product_by_id(product_id)
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
 
 
 @router.post("/", response_model=Product)
@@ -38,4 +41,8 @@ async def modify_product(product_id: int, product: Product):
 
 @router.delete("/{product_id}")
 async def remove_product(product_id: int):
-    return await delete_product(product_id)
+    deleted = await delete_product(product_id)
+    return {
+        "message": "Product deleted" if deleted else "Product not found",
+        "deleted": deleted,
+    }
