@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime
 from bson import ObjectId
 from app.database import orders_collection
-from app.routers.orders_router import order_serializer
+from app.routers.orders_router import serialize_order
 
 router = APIRouter(prefix="/calendar", tags=["Calendar"])
 
@@ -15,7 +15,7 @@ async def get_orders_in_range(
     query = {"due_at": {"$gte": start, "$lte": end}}
     orders = []
     async for order in orders_collection.find(query):
-        orders.append(order_serializer(order))
+        orders.append(serialize_order(order))
     return orders
 
 @router.put("/{order_id}")
