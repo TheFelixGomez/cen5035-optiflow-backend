@@ -19,18 +19,6 @@ class OrderItem(BaseModel):
     price: float
 
 
-# Order model
-class Order(BaseModel):
-    vendor_id: str
-    order_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    items: List[OrderItem]
-    status: str
-
-    # total is optional because we'll calculate it in main.py
-    total_amount: float | None = None
-
-
 # Order Model for creating/updating order
 class OrderCreate(BaseModel):
     vendor_id: str
