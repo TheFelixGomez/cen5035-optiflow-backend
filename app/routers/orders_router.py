@@ -1,11 +1,14 @@
-from fastapi import APIRouter, HTTPException
 from bson import ObjectId
+from bson.errors import InvalidId
+from fastapi import APIRouter, HTTPException
+
 from app.database import orders_collection, users_collection
-from app.models import Order
+from app.models import OrderCreate, OrderResponse
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
-def order_serializer(order) -> dict:
+
+def serialize_order(order) -> dict:
     return {
         "id": str(order["_id"]),
         "vendor_id": str(order["vendor_id"]),
@@ -13,54 +16,85 @@ def order_serializer(order) -> dict:
         "items": order["items"],
         "status": order["status"],
         "total_amount": order.get("total_amount", 0),
+        "special_instructions": order.get("special_instructions"),
+        "due_at": str(order.get("due_at")) if order.get("due_at") else None,
     }
 
-@router.post("/")
-async def create_order(order: Order):
-    vendor = await users_collection.find_one({"_id": ObjectId(order.vendor_id)})
-    if not vendor:
+
+@router.post("/", response_model=OrderResponse)
+async def create_order(order: OrderCreate):
+    try:
+        vendor_obj_id = ObjectId(order.vendor_id)
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid vendor ID format")
+
+    vendor_exists = await users_collection.find_one({"_id": vendor_obj_id})
+    if not vendor_exists:
         raise HTTPException(status_code=400, detail="Vendor does not exist")
 
+    # Calculate total
     total = sum(item.price * item.quantity for item in order.items)
+
     order_dict = order.model_dump()
+    order_dict["vendor_id"] = vendor_obj_id
     order_dict["total_amount"] = total
 
     result = await orders_collection.insert_one(order_dict)
-    order_dict["_id"] = str(result.inserted_id)
-    return order_dict
+    new_order = await orders_collection.find_one({"_id": result.inserted_id})
 
-@router.get("/")
+    return serialize_order(new_order)
+
+
+@router.get("/", response_model=list[OrderResponse])
 async def get_orders():
-    orders = []
-    async for order in orders_collection.find():
-        order["_id"] = str(order["_id"])
-        orders.append(order)
-    return orders
+    data = await orders_collection.find().to_list(length=None)
+    return [serialize_order(order) for order in data]
 
-@router.get("/{order_id}")
+
+@router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(order_id: str):
-    order = await orders_collection.find_one({"_id": ObjectId(order_id)})
+    try:
+        oid = ObjectId(order_id)
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid order ID")
+
+    order = await orders_collection.find_one({"_id": oid})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    order["_id"] = str(order["_id"])
-    return order
+
+    return serialize_order(order)
+
 
 @router.put("/{order_id}")
-async def update_order(order_id: str, updated_order: Order):
-    updated_dict = updated_order.model_dump()
-    updated_dict["total_amount"] = sum(item.price * item.quantity for item in updated_order.items)
+async def update_order(order_id: str, updated: OrderCreate):
+    try:
+        oid = ObjectId(order_id)
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid order ID")
 
-    result = await orders_collection.update_one(
-        {"_id": ObjectId(order_id)},
-        {"$set": updated_dict}
+    updated_dict = updated.model_dump()
+    updated_dict["total_amount"] = sum(
+        item.price * item.quantity for item in updated.items
     )
-    if result.modified_count == 0:
+
+    result = await orders_collection.update_one({"_id": oid}, {"$set": updated_dict})
+
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Order not found")
+
     return {"message": "Order updated successfully"}
+
 
 @router.delete("/{order_id}")
 async def delete_order(order_id: str):
-    result = await orders_collection.delete_one({"_id": ObjectId(order_id)})
+    try:
+        oid = ObjectId(order_id)
+    except InvalidId:
+        raise HTTPException(status_code=400, detail="Invalid order ID")
+
+    result = await orders_collection.delete_one({"_id": oid})
+
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Order not found")
+
     return {"message": "Order deleted successfully"}
