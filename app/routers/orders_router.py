@@ -2,10 +2,10 @@ from fastapi import APIRouter, HTTPException
 from bson import ObjectId
 from bson.errors import InvalidId
 from app.database import orders_collection, users_collection
-from app.models import OrderCreate, OrderResponse
+from app.models import Order, OrderCreate, OrderResponse
+
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
-
 
 def serialize_order(order) -> dict:
     return {
@@ -19,7 +19,6 @@ def serialize_order(order) -> dict:
         "due_at": str(order.get("due_at")) if order.get("due_at") else None,
     }
 
-#Create Order
 @router.post("/", response_model=OrderResponse)
 async def create_order(order: OrderCreate):
     try:
@@ -43,13 +42,11 @@ async def create_order(order: OrderCreate):
 
     return serialize_order(new_order)
 
-# Get All Orders
 @router.get("/", response_model=list[OrderResponse])
 async def get_orders():
     data = await orders_collection.find().to_list(length=None)
     return [serialize_order(order) for order in data]
 
-# Get One Order
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(order_id: str):
     try:
@@ -63,7 +60,6 @@ async def get_order(order_id: str):
 
     return serialize_order(order)
 
-# Update Order
 @router.put("/{order_id}")
 async def update_order(order_id: str, updated: OrderCreate):
     try:
@@ -84,7 +80,6 @@ async def update_order(order_id: str, updated: OrderCreate):
 
     return {"message": "Order updated successfully"}
 
-# Delete Order
 @router.delete("/{order_id}")
 async def delete_order(order_id: str):
     try:
