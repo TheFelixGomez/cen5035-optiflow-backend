@@ -8,7 +8,7 @@ from app.orders import router as orders_router
 from app.calendar import router as calendar_router
 from app.vendors import router as vendors_router
 from app.reporting import router as reporting_router
-from app.products import router as products
+from app.products import router as products_router
 
 
 app = FastAPI()
@@ -27,7 +27,7 @@ app.include_router(auth_router.router)
 app.include_router(users_router.router)
 app.include_router(orders_router.router)
 app.include_router(vendors_router.router)
-app.include_router(products.router)
+app.include_router(products_router.router)
 app.include_router(calendar_router.router)
 app.include_router(reporting_router.router)
 
