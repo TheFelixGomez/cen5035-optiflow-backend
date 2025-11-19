@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.database import orders_collection, users_collection
 from app.models import OrderCreate, OrderResponse
 from app.auth.service import get_current_active_user
-
+from app.users.models import User
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -27,7 +27,7 @@ def serialize_order(order) -> dict:
 
 @router.post("/", response_model=OrderResponse)
 async def create_order(
-    order: OrderCreate, current_user: Annotated[dict, Depends(get_current_active_user)]
+    order: OrderCreate, current_user: Annotated[User, Depends(get_current_active_user)]
 ):
     try:
         vendor_obj_id = ObjectId(order.vendor_id)
@@ -53,7 +53,7 @@ async def create_order(
 
 
 @router.get("/", response_model=list[OrderResponse])
-async def get_orders(current_user: Annotated[dict, Depends(get_current_active_user)]):
+async def get_orders(current_user: Annotated[User, Depends(get_current_active_user)]):
     query = {} if current_user.role == "admin" else {"user_id": str(current_user.id)}
 
     data = await orders_collection.find(query).to_list(length=None)
@@ -62,7 +62,7 @@ async def get_orders(current_user: Annotated[dict, Depends(get_current_active_us
 
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(
-    order_id: str, current_user: Annotated[dict, Depends(get_current_active_user)]
+    order_id: str, current_user: Annotated[User, Depends(get_current_active_user)]
 ):
     try:
         oid = ObjectId(order_id)
@@ -84,7 +84,7 @@ async def get_order(
 async def update_order(
     order_id: str,
     updated: OrderCreate,
-    current_user: Annotated[dict, Depends(get_current_active_user)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     try:
         oid = ObjectId(order_id)
@@ -114,7 +114,7 @@ async def update_order(
 
 @router.delete("/{order_id}")
 async def delete_order(
-    order_id: str, current_user: Annotated[dict, Depends(get_current_active_user)]
+    order_id: str, current_user: Annotated[User, Depends(get_current_active_user)]
 ):
     try:
         oid = ObjectId(order_id)
