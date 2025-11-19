@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime
 from bson import ObjectId
 from app.database import orders_collection
-from app.routers.orders_router import serialize_order
+from app.orders.service import serialize_order
 
 router = APIRouter(prefix="/calendar", tags=["Calendar"])
 
