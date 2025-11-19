@@ -1,16 +1,20 @@
 from fastapi import APIRouter
 from typing import List
 
-from app.models import Product
-from app.services.product_service import (
+from app.products.models import Product
+from app.products.service import (
     get_all_products,
     get_product_by_id,
     create_product,
     update_product,
-    delete_product
+    delete_product,
 )
 
-router = APIRouter(prefix="/products", tags=["products"])
+router = APIRouter(
+    prefix="/products",
+    tags=["products"],
+)
+
 
 @router.get("/", response_model=List[Product])
 async def read_products():
