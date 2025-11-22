@@ -6,7 +6,14 @@ from app.orders.service import serialize_order
 
 router = APIRouter(prefix="/calendar", tags=["Calendar"])
 
+# ---------- Helpers ----------
+def validate_object_id(id: str) -> ObjectId:
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid order ID format")
+    return ObjectId(id)
 
+
+# ---------- Routes ----------
 @router.get("/")
 async def get_orders_in_range(
     start: datetime = Query(..., description="Start date (inclusive)"),
@@ -22,14 +29,15 @@ async def get_orders_in_range(
 
 @router.put("/{order_id}")
 async def update_order_due_date(order_id: str, new_due_at: datetime):
-    """Update an order's due date (used by the calendar drag-and-drop)."""
+    """Update an order's due date (used by calendar drag-and-drop)."""
+    oid = validate_object_id(order_id)
+
     result = await orders_collection.update_one(
-        {"_id": ObjectId(order_id)}, {"$set": {"due_at": new_due_at}}
+        {"_id": oid}, {"$set": {"due_at": new_due_at}}
     )
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Order not found or not updated")
-    return {
-        "message": "Order due date updated",
-        "order_id": order_id,
-        "due_at": new_due_at,
-    }
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    updated_order = await orders_collection.find_one({"_id": oid})
+    return serialize_order(updated_order)

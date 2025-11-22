@@ -1,125 +1,111 @@
-from typing import Annotated
-
+from typing import Annotated, List
 from bson import ObjectId
-from bson.errors import InvalidId
 from fastapi import APIRouter, HTTPException, Depends
 
-from app.database import orders_collection, users_collection
+from app.database import orders_collection, vendors_collection
 from app.auth.service import get_current_active_user
-from app.orders.models import OrderResponse, OrderCreate
-from app.orders.service import serialize_order
+from app.orders.models import OrderCreate, OrderUpdate, OrderResponse
 from app.users.models import User
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
+# ---------- Helpers ----------
+def validate_object_id(id: str) -> ObjectId:
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    return ObjectId(id)
 
+
+def serialize_order(order) -> dict:
+    return {
+        "id": str(order["_id"]),
+        "vendor_id": str(order["vendor_id"]),
+        "user_id": str(order.get("user_id", "")),
+        "order_date": order["order_date"],
+        "items": order["items"],
+        "status": order["status"],
+        "total_amount": order.get("total_amount", 0),
+        "special_instructions": order.get("special_instructions"),
+        "due_at": order.get("due_at"),
+    }
+
+
+# ---------- CREATE ORDER ----------
 @router.post("/", response_model=OrderResponse)
 async def create_order(
     order: OrderCreate, current_user: Annotated[User, Depends(get_current_active_user)]
 ):
-    try:
-        vendor_obj_id = ObjectId(order.vendor_id)
-    except InvalidId:
-        raise HTTPException(status_code=400, detail="Invalid vendor ID format")
-
-    vendor_exists = await users_collection.find_one({"_id": vendor_obj_id})
-    if not vendor_exists:
+    vendor_id = validate_object_id(order.vendor_id)
+    vendor = await vendors_collection.find_one({"_id": vendor_id})
+    if not vendor:
         raise HTTPException(status_code=400, detail="Vendor does not exist")
 
-    # Calculate total
     total = sum(item.price * item.quantity for item in order.items)
-
     order_dict = order.model_dump()
     order_dict["user_id"] = str(current_user.id)
-    order_dict["vendor_id"] = vendor_obj_id
+    order_dict["vendor_id"] = vendor_id
     order_dict["total_amount"] = total
 
     result = await orders_collection.insert_one(order_dict)
     new_order = await orders_collection.find_one({"_id": result.inserted_id})
-
     return serialize_order(new_order)
 
 
-@router.get("/", response_model=list[OrderResponse])
+# ---------- GET ORDERS ----------
+@router.get("/", response_model=List[OrderResponse])
 async def get_orders(current_user: Annotated[User, Depends(get_current_active_user)]):
     query = {} if current_user.role == "admin" else {"user_id": str(current_user.id)}
-
-    data = await orders_collection.find(query).to_list(length=None)
-    return [serialize_order(order) for order in data]
+    orders = await orders_collection.find(query).to_list(length=None)
+    return [serialize_order(order) for order in orders]
 
 
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(
     order_id: str, current_user: Annotated[User, Depends(get_current_active_user)]
 ):
-    try:
-        oid = ObjectId(order_id)
-    except InvalidId:
-        raise HTTPException(status_code=400, detail="Invalid order ID")
-
+    oid = validate_object_id(order_id)
     order = await orders_collection.find_one({"_id": oid})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-
-    # Customer cannot access another user's order
     if current_user.role != "admin" and order.get("user_id") != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
-
     return serialize_order(order)
 
 
+# ---------- UPDATE ORDER ----------
 @router.put("/{order_id}")
 async def update_order(
     order_id: str,
-    updated: OrderCreate,
+    updated: OrderUpdate,
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    try:
-        oid = ObjectId(order_id)
-    except InvalidId:
-        raise HTTPException(status_code=400, detail="Invalid order ID")
-
-    existing = await orders_collection.find_one({"_id": ObjectId(order_id)})
+    oid = validate_object_id(order_id)
+    existing = await orders_collection.find_one({"_id": oid})
     if not existing:
         raise HTTPException(status_code=404, detail="Order not found")
-
-    # Customer cannot modify another user's order
     if current_user.role != "admin" and existing.get("user_id") != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    updated_dict = updated.model_dump()
-    updated_dict["total_amount"] = sum(
-        item.price * item.quantity for item in updated.items
-    )
+    update_dict = {k: v for k, v in updated.model_dump(exclude_none=True).items()}
+    if "items" in update_dict:
+        update_dict["total_amount"] = sum(item.price * item.quantity for item in update_dict["items"])
 
-    result = await orders_collection.update_one({"_id": oid}, {"$set": updated_dict})
-
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Order not found")
-
-    return {"message": "Order updated successfully"}
+    await orders_collection.update_one({"_id": oid}, {"$set": update_dict})
+    updated_order = await orders_collection.find_one({"_id": oid})
+    return serialize_order(updated_order)
 
 
+# ---------- DELETE ORDER ----------
 @router.delete("/{order_id}")
 async def delete_order(
     order_id: str, current_user: Annotated[User, Depends(get_current_active_user)]
 ):
-    try:
-        oid = ObjectId(order_id)
-    except InvalidId:
-        raise HTTPException(status_code=400, detail="Invalid order ID")
-
-    existing = await orders_collection.find_one({"_id": ObjectId(order_id)})
+    oid = validate_object_id(order_id)
+    existing = await orders_collection.find_one({"_id": oid})
     if not existing:
         raise HTTPException(status_code=404, detail="Order not found")
-
-    # Customer cannot delete another user's order
     if current_user.role != "admin" and existing.get("user_id") != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    result = await orders_collection.delete_one({"_id": oid})
-
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Order not found")
-
+    await orders_collection.delete_one({"_id": oid})
     return {"message": "Order deleted successfully"}
