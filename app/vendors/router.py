@@ -1,11 +1,14 @@
 from fastapi import APIRouter, HTTPException
 from bson import ObjectId
-from app.database import users_collection
+from datetime import datetime, timezone
+
+from app.database import vendors_collection
 from app.vendors.models import Vendor
 
 router = APIRouter(prefix="/vendors", tags=["Vendors"])
 
 
+# ---------- Helper ----------
 def vendor_serializer(vendor) -> dict:
     return {
         "id": str(vendor["_id"]),
@@ -13,49 +16,57 @@ def vendor_serializer(vendor) -> dict:
         "email": vendor["email"],
         "phone": vendor["phone"],
         "address": vendor["address"],
-        "created_at": str(vendor["created_at"]),
+        "created_at": str(vendor.get("created_at")),
     }
 
 
-@router.post("/")
+# ---------- CRUD Routes ----------
+@router.post("/", response_model=dict)
 async def create_vendor(vendor: Vendor):
     vendor_dict = vendor.model_dump()
-    result = await users_collection.insert_one(vendor_dict)
-    vendor_dict["_id"] = str(result.inserted_id)
-    return vendor_dict
+    vendor_dict["created_at"] = datetime.now(timezone.utc)
+    result = await vendors_collection.insert_one(vendor_dict)
+    new_vendor = await vendors_collection.find_one({"_id": result.inserted_id})
+    return vendor_serializer(new_vendor)
 
 
-@router.get("/")
+@router.get("/", response_model=list[dict])
 async def get_vendors():
     vendors = []
-    async for vendor in users_collection.find():
-        vendor["_id"] = str(vendor["_id"])
-        vendors.append(vendor)
+    async for vendor in vendors_collection.find():
+        vendors.append(vendor_serializer(vendor))
     return vendors
 
 
-@router.get("/{vendor_id}")
+@router.get("/{vendor_id}", response_model=dict)
 async def get_vendor(vendor_id: str):
-    vendor = await users_collection.find_one({"_id": ObjectId(vendor_id)})
+    if not ObjectId.is_valid(vendor_id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    vendor = await vendors_collection.find_one({"_id": ObjectId(vendor_id)})
     if not vendor:
         raise HTTPException(status_code=404, detail="Vendor not found")
-    vendor["_id"] = str(vendor["_id"])
-    return vendor
+    return vendor_serializer(vendor)
 
 
-@router.put("/{vendor_id}")
+@router.put("/{vendor_id}", response_model=dict)
 async def update_vendor(vendor_id: str, updated: Vendor):
-    result = await users_collection.update_one(
-        {"_id": ObjectId(vendor_id)}, {"$set": updated.model_dump()}
+    if not ObjectId.is_valid(vendor_id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    update_data = {k: v for k, v in updated.model_dump().items() if v is not None}
+    result = await vendors_collection.update_one(
+        {"_id": ObjectId(vendor_id)}, {"$set": update_data}
     )
-    if result.modified_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Vendor not found")
-    return {"message": "Vendor updated successfully"}
+    updated_vendor = await vendors_collection.find_one({"_id": ObjectId(vendor_id)})
+    return vendor_serializer(updated_vendor)
 
 
 @router.delete("/{vendor_id}")
 async def delete_vendor(vendor_id: str):
-    result = await users_collection.delete_one({"_id": ObjectId(vendor_id)})
+    if not ObjectId.is_valid(vendor_id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    result = await vendors_collection.delete_one({"_id": ObjectId(vendor_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Vendor not found")
     return {"message": "Vendor deleted successfully"}
