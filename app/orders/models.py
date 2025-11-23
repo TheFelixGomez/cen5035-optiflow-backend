@@ -21,6 +21,15 @@ class OrderCreate(BaseModel):
     due_at: datetime | None = None
 
 
+# Order Model for partial updates
+class OrderUpdate(BaseModel):
+    vendor_id: str | None = None
+    items: List[OrderItem] | None = None
+    status: str | None = None
+    special_instructions: str | None = None
+    due_at: datetime | None = None
+
+
 # Order Model for storing/returning
 class OrderResponse(BaseModel):
     id: str
