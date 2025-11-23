@@ -3,7 +3,7 @@ from typing import Annotated
 from bson import ObjectId
 
 from app.auth.service import get_current_active_user, get_password_hash
-from app.users.models import User, UserCreate, UserDB
+from app.users.models import User, UserCreate, UserDB, UserUpdate
 from app.users.service import get_user, store_user
 from app.database import users_collection
 
@@ -14,19 +14,14 @@ router = APIRouter(
 
 
 # ---------- Helpers ----------
-def user_serializer(user) -> dict:
-    """Normalize user result coming from Mongo (dict) or Pydantic model."""
-    if hasattr(user, "dict"):
-        user_dict = user.dict()
-    else:
-        user_dict = user
-
-    return {
-        "id": str(user_dict.get("id") or user_dict.get("_id")),
-        "username": user_dict.get("username"),
-        "role": user_dict.get("role", "customer"),
-        "disabled": user_dict.get("disabled", False),
-    }
+def user_to_model(user_doc: dict) -> User:
+    """Convert MongoDB document to User Pydantic model."""
+    return User(
+        id=str(user_doc["_id"]),
+        username=user_doc["username"],
+        role=user_doc.get("role", "customer"),
+        disabled=user_doc.get("disabled", False),
+    )
 
 
 def validate_object_id(id: str) -> ObjectId:
@@ -51,20 +46,58 @@ async def create_user(user: UserCreate):
     user_dict["role"] = user_dict.get("role", "customer")
     user_dict.pop("password", None)
 
-    created_user = await store_user(UserDB(**user_dict))
-    if created_user is None:
+    result = await users_collection.insert_one(user_dict)
+    created_user = await users_collection.find_one({"_id": result.inserted_id})
+    if not created_user:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create user",
         )
-    return user_serializer(created_user)
+    return user_to_model(created_user)
+
+
+@router.get("/", response_model=list[User])
+async def list_users(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    users = await users_collection.find({}).to_list(length=None)
+    return [user_to_model(user) for user in users]
 
 
 @router.get("/me", response_model=User)
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    return user_serializer(current_user)
+    # current_user is already a UserDB model from auth, convert to User response
+    user_doc = await users_collection.find_one({"username": current_user.username})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user_to_model(user_doc)
+
+
+@router.put("/{user_id}", response_model=User)
+async def update_user(
+    user_id: str,
+    user_update: UserUpdate,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    oid = validate_object_id(user_id)
+    existing = await users_collection.find_one({"_id": oid})
+    if not existing:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    update_dict = {k: v for k, v in user_update.model_dump(exclude_none=True).items()}
+    if update_dict:
+        await users_collection.update_one({"_id": oid}, {"$set": update_dict})
+
+    updated_user = await users_collection.find_one({"_id": oid})
+    return user_to_model(updated_user)
 
 
 @router.get("/exists")
