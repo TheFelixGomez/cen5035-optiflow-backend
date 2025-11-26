@@ -12,11 +12,11 @@ router = APIRouter(prefix="/vendors", tags=["Vendors"])
 def vendor_serializer(vendor) -> dict:
     return {
         "id": str(vendor["_id"]),
-        "name": vendor.get("name", ""),
-        "email": vendor.get("email", ""),
-        "phone": vendor.get("phone", ""),
-        "address": vendor.get("address", ""),
-        "created_at": str(vendor.get("created_at", "")),
+        "name": vendor["name"],
+        "email": vendor["email"],
+        "phone": vendor["phone"],
+        "address": vendor["address"],
+        "created_at": str(vendor.get("created_at")),
     }
 
 

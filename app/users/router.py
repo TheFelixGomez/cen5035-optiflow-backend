@@ -15,17 +15,11 @@ router = APIRouter(
 
 # ---------- Helpers ----------
 def user_serializer(user) -> dict:
-    """Normalize user result coming from Mongo (dict) or Pydantic model."""
-    if hasattr(user, "dict"):
-        user_dict = user.dict()
-    else:
-        user_dict = user
-
     return {
-        "id": str(user_dict.get("id") or user_dict.get("_id")),
-        "username": user_dict.get("username"),
-        "role": user_dict.get("role", "customer"),
-        "disabled": user_dict.get("disabled", False),
+        "id": str(user["_id"]),
+        "username": user["username"],
+        "role": user.get("role", "customer"),
+        "disabled": user.get("disabled", False),
     }
 
 
