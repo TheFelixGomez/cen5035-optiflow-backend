@@ -5,6 +5,10 @@ from app.users.models import User, UserDB
 async def get_user(username: str):
     user = await users_collection.find_one({"username": username})
     if user:
+        mongo_id = user.get("_id")
+        if mongo_id is not None:
+            user["_id"] = str(mongo_id)
+            user["id"] = str(mongo_id)
         return UserDB(**user)
     return None
 

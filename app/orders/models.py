@@ -12,7 +12,7 @@ class OrderItem(BaseModel):
 
 # Order Model for creating/updating order
 class OrderCreate(BaseModel):
-    user_id: str
+    user_id: str | None = None
     vendor_id: str
     order_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     items: List[OrderItem]

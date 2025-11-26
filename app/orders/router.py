@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, List
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends
@@ -17,11 +18,14 @@ def validate_object_id(id: str) -> ObjectId:
 
 
 def serialize_order(order) -> dict:
+    order_date = order.get("order_date")
+    if isinstance(order_date, datetime):
+        order_date = order_date.isoformat()
     return {
         "id": str(order["_id"]),
         "vendor_id": str(order["vendor_id"]),
         "user_id": str(order.get("user_id", "")),
-        "order_date": order["order_date"],
+        "order_date": order_date,
         "items": order["items"],
         "status": order["status"],
         "total_amount": order.get("total_amount", 0),
