@@ -6,7 +6,12 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 
 
 class User(BaseModel):
-    id: PyObjectId | None = Field(alias="_id", default=None)
+    model_config = {
+        "populate_by_name": True,
+        "from_attributes": True,
+    }
+    
+    id: str | None = Field(default=None, serialization_alias="id")
     username: str
     disabled: bool = False
     role: str = "customer"
@@ -19,4 +24,9 @@ class UserDB(User):
 class UserCreate(BaseModel):
     username: str
     password: str
-    role: str = "customer" 
+    role: str = "customer"
+
+
+class UserUpdate(BaseModel):
+    role: str | None = None
+    disabled: bool | None = None 

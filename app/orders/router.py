@@ -33,7 +33,8 @@ def serialize_order(order) -> dict:
 # ---------- CREATE ORDER ----------
 @router.post("/", response_model=OrderResponse)
 async def create_order(
-    order: OrderCreate, current_user: Annotated[User, Depends(get_current_active_user)]
+    order: OrderCreate,
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     vendor_id = validate_object_id(order.vendor_id)
     vendor = await vendors_collection.find_one({"_id": vendor_id})
@@ -61,7 +62,8 @@ async def get_orders(current_user: Annotated[User, Depends(get_current_active_us
 
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(
-    order_id: str, current_user: Annotated[User, Depends(get_current_active_user)]
+    order_id: str,
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     oid = validate_object_id(order_id)
     order = await orders_collection.find_one({"_id": oid})
@@ -98,7 +100,8 @@ async def update_order(
 # ---------- DELETE ORDER ----------
 @router.delete("/{order_id}")
 async def delete_order(
-    order_id: str, current_user: Annotated[User, Depends(get_current_active_user)]
+    order_id: str,
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     oid = validate_object_id(order_id)
     existing = await orders_collection.find_one({"_id": oid})
