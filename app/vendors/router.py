@@ -16,10 +16,10 @@ router = APIRouter(prefix="/vendors", tags=["Vendors"])
 def vendor_serializer(vendor) -> dict:
     return {
         "id": str(vendor["_id"]),
-        "name": vendor["name"],
-        "email": vendor["email"],
-        "phone": vendor["phone"],
-        "address": vendor["address"],
+        "name": vendor.get("name"),
+        "email": vendor.get("email"),
+        "phone": vendor.get("phone"),
+        "address": vendor.get("address"),
         "created_at": str(vendor.get("created_at")),
     }
 
@@ -71,20 +71,16 @@ async def get_vendor(vendor_id: str):
 async def update_vendor(vendor_id: str, updated: Vendor):
     if not ObjectId.is_valid(vendor_id):
         raise HTTPException(status_code=400, detail="Invalid ID format")
+
     update_data = {k: v for k, v in updated.model_dump().items() if v is not None}
-    result = await vendors_collection.update_one(
-        {"_id": ObjectId(vendor_id)}, {"$set": update_data}
-    if not ObjectId.is_valid(vendor_id):
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-    update_data = {k: v for k, v in updated.model_dump().items() if v is not None}
+
     result = await vendors_collection.update_one(
         {"_id": ObjectId(vendor_id)}, {"$set": update_data}
     )
-    if result.matched_count == 0:
+
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Vendor not found")
-    updated_vendor = await vendors_collection.find_one({"_id": ObjectId(vendor_id)})
-    return vendor_serializer(updated_vendor)
+
     updated_vendor = await vendors_collection.find_one({"_id": ObjectId(vendor_id)})
     return vendor_serializer(updated_vendor)
 
@@ -93,11 +89,11 @@ async def update_vendor(vendor_id: str, updated: Vendor):
 async def delete_vendor(vendor_id: str):
     if not ObjectId.is_valid(vendor_id):
         raise HTTPException(status_code=400, detail="Invalid ID format")
+
     result = await vendors_collection.delete_one({"_id": ObjectId(vendor_id)})
-    if not ObjectId.is_valid(vendor_id):
-        raise HTTPException(status_code=400, detail="Invalid ID format")
-    result = await vendors_collection.delete_one({"_id": ObjectId(vendor_id)})
+
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Vendor not found")
+
     return {"message": "Vendor deleted successfully"}
 

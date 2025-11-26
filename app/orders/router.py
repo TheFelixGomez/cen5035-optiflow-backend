@@ -41,8 +41,8 @@ async def create_order(
     vendor_id = validate_object_id(order.vendor_id)
     vendor = await vendors_collection.find_one({"_id": vendor_id})
     if not vendor:
-    vendor_id = validate_object_id(order.vendor_id)
-    vendor = await vendors_collection.find_one({"_id": vendor_id})
+        vendor_id = validate_object_id(order.vendor_id)
+        vendor = await vendors_collection.find_one({"_id": vendor_id})
     if not vendor:
         raise HTTPException(status_code=400, detail="Vendor does not exist")
 
@@ -85,7 +85,6 @@ async def get_order(
 @router.put("/{order_id}")
 async def update_order(
     order_id: str,
-    updated: OrderUpdate,
     updated: OrderUpdate,
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
