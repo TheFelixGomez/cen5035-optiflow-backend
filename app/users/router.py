@@ -2,9 +2,12 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Annotated
 from bson import ObjectId
 
+from bson import ObjectId
+
 from app.auth.service import get_current_active_user, get_password_hash
 from app.users.models import User, UserCreate, UserDB
 from app.users.service import get_user, store_user
+from app.database import users_collection
 from app.database import users_collection
 
 router = APIRouter(
@@ -12,6 +15,30 @@ router = APIRouter(
     tags=["users"],
 )
 
+
+# ---------- Helpers ----------
+def user_serializer(user) -> dict:
+    """Normalize user result coming from Mongo (dict) or Pydantic model."""
+    if hasattr(user, "dict"):
+        user_dict = user.dict()
+    else:
+        user_dict = user
+
+    return {
+        "id": str(user_dict.get("id") or user_dict.get("_id")),
+        "username": user_dict.get("username"),
+        "role": user_dict.get("role", "customer"),
+        "disabled": user_dict.get("disabled", False),
+    }
+
+
+def validate_object_id(id: str) -> ObjectId:
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    return ObjectId(id)
+
+
+# ---------- Routes ----------
 
 # ---------- Helpers ----------
 def user_serializer(user) -> dict:
@@ -33,6 +60,7 @@ def validate_object_id(id: str) -> ObjectId:
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
 async def create_user(user: UserCreate):
     existing_user = await get_user(username=user.username)
+    existing_user = await get_user(username=user.username)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -44,13 +72,17 @@ async def create_user(user: UserCreate):
     user_dict["hashed_password"] = hashed_password
     user_dict["role"] = user_dict.get("role", "customer")
     user_dict.pop("password", None)
+    user_dict["role"] = user_dict.get("role", "customer")
+    user_dict.pop("password", None)
 
+    created_user = await store_user(UserDB(**user_dict))
     created_user = await store_user(UserDB(**user_dict))
     if created_user is None:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create user",
         )
+    return user_serializer(created_user)
     return user_serializer(created_user)
 
 
@@ -59,14 +91,17 @@ async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     return user_serializer(current_user)
+    return user_serializer(current_user)
 
 
 @router.get("/exists")
 async def check_user_exists(email: str):
     user = await users_collection.find_one({"username": email})
+    user = await users_collection.find_one({"username": email})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return {"exists": True}
+
 
 
 @router.get("/count")
