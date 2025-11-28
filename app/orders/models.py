@@ -34,6 +34,7 @@ class OrderUpdate(BaseModel):
 class OrderResponse(BaseModel):
     id: str
     vendor_id: str
+    user_id: str | None = None
     order_date: str
     items: List[OrderItem]
     status: str
