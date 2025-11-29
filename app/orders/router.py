@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, List
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends
@@ -24,7 +25,7 @@ def serialize_order(order) -> dict:
         "id": str(order["_id"]),
         "vendor_id": str(order["vendor_id"]),
         "user_id": str(order.get("user_id", "")),
-        "order_date": order["order_date"],
+        "order_date": order_date,
         "items": order["items"],
         "status": order["status"],
         "total_amount": order.get("total_amount", 0),
@@ -129,6 +130,7 @@ async def delete_order(
 
     await orders_collection.delete_one({"_id": oid})
     return {"message": "Order deleted successfully"}
+
 
 
 
