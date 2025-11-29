@@ -61,6 +61,7 @@ async def get_orders(current_user: Annotated[User, Depends(get_current_active_us
         user_identifier = str(current_user.id) if current_user.id else None
         possible_ids = [value for value in [user_identifier, current_user.username] if value]
         query = {"user_id": {"$in": possible_ids}} if possible_ids else {"user_id": ""}
+    orders = await orders_collection.find(query).to_list(length=None)
     return [serialize_order(order) for order in orders]
 
 
@@ -125,4 +126,5 @@ async def delete_order(
 
     await orders_collection.delete_one({"_id": oid})
     return {"message": "Order deleted successfully"}
+
 
