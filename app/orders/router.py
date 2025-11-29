@@ -17,6 +17,9 @@ def validate_object_id(id: str) -> ObjectId:
 
 
 def serialize_order(order) -> dict:
+    order_date = order.get("order_date")
+    if isinstance(order_date, datetime):
+        order_date = order_date.isoformat()
     return {
         "id": str(order["_id"]),
         "vendor_id": str(order["vendor_id"]),
@@ -126,5 +129,6 @@ async def delete_order(
 
     await orders_collection.delete_one({"_id": oid})
     return {"message": "Order deleted successfully"}
+
 
 
