@@ -11,7 +11,7 @@ class User(BaseModel):
         "from_attributes": True,
     }
     
-    id: str | None = Field(default=None, serialization_alias="id")
+    id: str | None = Field(default=None, serialization_alias="id",alias="_id")
     username: str
     disabled: bool = False
     role: str = "customer"
@@ -30,3 +30,4 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     role: str | None = None
     disabled: bool | None = None 
+
