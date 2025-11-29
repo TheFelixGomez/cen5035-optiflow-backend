@@ -10,8 +10,8 @@ class User(BaseModel):
         "populate_by_name": True,
         "from_attributes": True,
     }
-
-    id: str | None = Field(default=None, alias="_id", serialization_alias="id")
+    
+    id: str | None = Field(default=None, serialization_alias="id")
     username: str
     disabled: bool = False
     role: str = "customer"

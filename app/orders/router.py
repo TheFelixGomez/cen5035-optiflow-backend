@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Annotated, List
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends
@@ -18,14 +17,11 @@ def validate_object_id(id: str) -> ObjectId:
 
 
 def serialize_order(order) -> dict:
-    order_date = order.get("order_date")
-    if isinstance(order_date, datetime):
-        order_date = order_date.isoformat()
     return {
         "id": str(order["_id"]),
         "vendor_id": str(order["vendor_id"]),
         "user_id": str(order.get("user_id", "")),
-        "order_date": order_date,
+        "order_date": order["order_date"],
         "items": order["items"],
         "status": order["status"],
         "total_amount": order.get("total_amount", 0),
@@ -37,7 +33,8 @@ def serialize_order(order) -> dict:
 # ---------- CREATE ORDER ----------
 @router.post("/", response_model=OrderResponse)
 async def create_order(
-    order: OrderCreate, current_user: Annotated[User, Depends(get_current_active_user)]
+    order: OrderCreate,
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     vendor_id = validate_object_id(order.vendor_id)
     vendor = await vendors_collection.find_one({"_id": vendor_id})
@@ -58,19 +55,15 @@ async def create_order(
 # ---------- GET ORDERS ----------
 @router.get("/", response_model=List[OrderResponse])
 async def get_orders(current_user: Annotated[User, Depends(get_current_active_user)]):
-    if current_user.role == "admin":
-        query = {}
-    else:
-        user_identifier = str(current_user.id) if current_user.id else None
-        possible_ids = [value for value in [user_identifier, current_user.username] if value]
-        query = {"user_id": {"$in": possible_ids}} if possible_ids else {"user_id": ""}
+    query = {} if current_user.role == "admin" else {"user_id": str(current_user.id)}
     orders = await orders_collection.find(query).to_list(length=None)
     return [serialize_order(order) for order in orders]
 
 
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(
-    order_id: str, current_user: Annotated[User, Depends(get_current_active_user)]
+    order_id: str,
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     oid = validate_object_id(order_id)
     order = await orders_collection.find_one({"_id": oid})
@@ -107,7 +100,8 @@ async def update_order(
 # ---------- DELETE ORDER ----------
 @router.delete("/{order_id}")
 async def delete_order(
-    order_id: str, current_user: Annotated[User, Depends(get_current_active_user)]
+    order_id: str,
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ):
     oid = validate_object_id(order_id)
     existing = await orders_collection.find_one({"_id": oid})
