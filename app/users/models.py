@@ -1,33 +1,19 @@
-from typing import Annotated
-
-from pydantic import BaseModel, BeforeValidator, Field
-
-PyObjectId = Annotated[str, BeforeValidator(str)]
-
+from pydantic import BaseModel, Field
 
 class User(BaseModel):
-    model_config = {
-        "populate_by_name": True,
-        "from_attributes": True,
-    }
-    
-    id: str | None = Field(default=None, serialization_alias="id",alias="_id")
+    id: str
     username: str
     disabled: bool = False
     role: str = "customer"
 
-
 class UserDB(User):
     hashed_password: str
-
 
 class UserCreate(BaseModel):
     username: str
     password: str
     role: str = "customer"
 
-
 class UserUpdate(BaseModel):
     role: str | None = None
-    disabled: bool | None = None 
-
+    disabled: bool | None = None
