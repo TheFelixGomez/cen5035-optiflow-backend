@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, List
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends
@@ -19,6 +20,9 @@ def validate_object_id(id: str) -> ObjectId:
 
 
 def serialize_order(order) -> dict:
+    order_date = order.get("order_date")
+    if isinstance(order_date, datetime):
+        order_date = order_date.isoformat()
     return {
         "id": str(order["_id"]),
         "vendor_id": str(order["vendor_id"]),
@@ -60,12 +64,16 @@ async def create_order(
 # ---------- GET ORDERS ----------
 @router.get("/", response_model=List[OrderResponse])
 async def get_orders(current_user: Annotated[User, Depends(get_current_active_user)]):
-    query = {} if current_user.role == "admin" else {"user_id": str(current_user.id)}
+    if current_user.role == "admin":
+        query = {}
+    else:
+        user_identifier = str(current_user.id) if current_user.id else None
+        possible_ids = [value for value in [user_identifier, current_user.username] if value]
+        query = {"user_id": {"$in": possible_ids}} if possible_ids else {"user_id": ""}
     orders = await orders_collection.find(query).to_list(length=None)
     return [serialize_order(order) for order in orders]
 
 
-# ---------- GET SINGLE ORDER ----------
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(
     order_id: str,
@@ -76,8 +84,11 @@ async def get_order(
     order = await orders_collection.find_one({"_id": oid})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    if current_user.role != "admin" and order.get("user_id") != str(current_user.id):
-        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role != "admin":
+        user_identifier = str(current_user.id) if current_user.id else None
+        allowed_ids = [value for value in [user_identifier, current_user.username] if value]
+        if order.get("user_id") not in allowed_ids:
+            raise HTTPException(status_code=403, detail="Not authorized")
     return serialize_order(order)
 
 
@@ -94,8 +105,11 @@ async def update_order(
     existing = await orders_collection.find_one({"_id": oid})
     if not existing:
         raise HTTPException(status_code=404, detail="Order not found")
-    if current_user.role != "admin" and existing.get("user_id") != str(current_user.id):
-        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role != "admin":
+        user_identifier = str(current_user.id) if current_user.id else None
+        allowed_ids = [value for value in [user_identifier, current_user.username] if value]
+        if existing.get("user_id") not in allowed_ids:
+            raise HTTPException(status_code=403, detail="Not authorized")
 
     update_dict = {k: v for k, v in updated.model_dump(exclude_none=True).items()}
     if "items" in update_dict:
@@ -118,9 +132,16 @@ async def delete_order(
     existing = await orders_collection.find_one({"_id": oid})
     if not existing:
         raise HTTPException(status_code=404, detail="Order not found")
-    if current_user.role != "admin" and existing.get("user_id") != str(current_user.id):
-        raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user.role != "admin":
+        user_identifier = str(current_user.id) if current_user.id else None
+        allowed_ids = [value for value in [user_identifier, current_user.username] if value]
+        if existing.get("user_id") not in allowed_ids:
+            raise HTTPException(status_code=403, detail="Not authorized")
 
     await orders_collection.delete_one({"_id": oid})
     await orders_collection.delete_one({"_id": oid})
     return {"message": "Order deleted successfully"}
+
+
+
+

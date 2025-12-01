@@ -25,7 +25,7 @@ class OrderUpdate(BaseModel):
     items: List[OrderItem] | None = None
     status: str | None = None
     special_instructions: str | None = None
-    due_at: str | None = None
+    due_at: datetime | None = None
     vendor_id: str | None = None
 
 
@@ -41,3 +41,4 @@ class OrderResponse(BaseModel):
     total_amount: float
     special_instructions: str | None = None
     due_at: datetime | None = None
+
