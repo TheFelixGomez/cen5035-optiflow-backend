@@ -16,8 +16,9 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "*"
-    ],  # All origins allowed for simplicity (we ignore security on purpose)
+        "https://cen5035-optiflow-frontend.onrender.com",  # Our deployed frontend URL
+        "http://localhost:5173",  # local dev URL
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
