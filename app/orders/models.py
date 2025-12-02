@@ -1,27 +1,36 @@
-from typing import List, Optional
+from datetime import UTC, datetime
+from typing import List
+
 from pydantic import BaseModel, Field
-from datetime import datetime
+
 
 class OrderItem(BaseModel):
     product_name: str
     quantity: int
     price: float
 
+
+# Order Model for creating/updating order
 class OrderCreate(BaseModel):
     vendor_id: str
-    order_date: datetime = Field(default_factory=datetime.utcnow)
+    order_date: datetime = Field(default_factory=lambda: datetime.now(UTC))
     items: List[OrderItem]
     status: str
-    special_instructions: Optional[str] = None
-    due_at: Optional[datetime] = None
+    special_instructions: str | None = None
+    due_at: datetime | None = None
 
+
+# Order Model for partial updates
 class OrderUpdate(BaseModel):
-    items: Optional[List[OrderItem]] = None
-    status: Optional[str] = None
-    special_instructions: Optional[str] = None
-    due_at: Optional[datetime] = None
-    vendor_id: Optional[str] = None
+    items: List[OrderItem] | None = None
+    status: str | None = None
+    special_instructions: str | None = None
+    due_at: datetime | None = None
+    vendor_id: str | None = None
 
+
+
+# Order Model for storing/returning
 class OrderResponse(BaseModel):
     id: str
     vendor_id: str
@@ -30,5 +39,6 @@ class OrderResponse(BaseModel):
     items: List[OrderItem]
     status: str
     total_amount: float
-    special_instructions: Optional[str] = None
-    due_at: Optional[str] = None
+    special_instructions: str | None = None
+    due_at: datetime | None = None
+
