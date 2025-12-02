@@ -21,6 +21,9 @@ def serialize_order(order) -> dict:
     order_date = order.get("order_date")
     if isinstance(order_date, datetime):
         order_date = order_date.isoformat()
+    due_at = order.get("due_at")
+    if isinstance(due_at, datetime):
+        due_at = due_at.isoformat()
     return {
         "id": str(order["_id"]),
         "vendor_id": str(order["vendor_id"]),
@@ -30,7 +33,7 @@ def serialize_order(order) -> dict:
         "status": order["status"],
         "total_amount": order.get("total_amount", 0),
         "special_instructions": order.get("special_instructions"),
-        "due_at": order.get("due_at"),
+        "due_at": due_at,
     }
 
 
@@ -47,7 +50,7 @@ async def create_order(
 
     total = sum(item.price * item.quantity for item in order.items)
     order_dict = order.model_dump()
-    order_dict["user_id"] = str(current_user.id)
+    order_dict["user_id"] = current_user.username or str(current_user.id)
     order_dict["vendor_id"] = vendor_id
     order_dict["total_amount"] = total
 
