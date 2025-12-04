@@ -59,14 +59,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         username = payload.get("sub")
         if username is None:
             raise credentials_exception
-        role = payload.get("role", "customer")
         token_data = TokenData(username=username)
     except InvalidTokenError:
         raise credentials_exception
     user = await get_user(username=token_data.username)
     if user is None:
         raise credentials_exception
-    user.role = role
     return user
 
 

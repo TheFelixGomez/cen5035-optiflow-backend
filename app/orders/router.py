@@ -108,7 +108,9 @@ async def update_order(
 
     update_dict = {k: v for k, v in updated.model_dump(exclude_none=True).items()}
     if "items" in update_dict:
-        update_dict["total_amount"] = sum(item.price * item.quantity for item in update_dict["items"])
+        update_dict["total_amount"] = sum(
+            item["price"] * item["quantity"] for item in update_dict["items"]
+        )
 
     await orders_collection.update_one({"_id": oid}, {"$set": update_dict})
     updated_order = await orders_collection.find_one({"_id": oid})
